@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Test | NEET Pattern</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h2 id="test-title">Loading Test...</h2>
+            <div class="timer" id="timer">Time Left: 180:00</div>
+        </div>
+
+        <div id="quiz-body">
+            <!-- Questions will be injected here via JavaScript -->
+        </div>
+
+        <div class="quiz-footer">
+            <button id="submit-quiz-btn" class="btn btn-submit" onclick="calculateScore()">Submit Entire Test</button>
+            <a href="index.html" class="btn btn-back">Back to Dashboard</a>
+        </div>
+
+        <!-- Result Modal -->
+        <div id="result-modal" class="modal">
+            <div class="modal-content">
+                <h2>Test Performance Report</h2>
+                <hr>
+                <div class="score-display">Total Score: <span id="total-score">0</span> / 720</div>
+                <div class="stats">
+                    <p class="correct-text">Correct Answers: <span id="correct-count">0</span> (+4 each)</p>
+                    <p class="wrong-text">Incorrect Answers: <span id="wrong-count">0</span> (-1 deduction)</p>
+                    <p class="skipped-text">Skipped Questions: <span id="skipped-count">0</span> (0 marks)</p>
+                </div>
+                <button class="btn" onclick="window.location.href='index.html'">Go Home</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Data and Logic -->
+    <script src="questions.js"></script>
+    <script>
+        // Get Test Key from URL parameters (e.g., ?test=test1)
+        const urlParams = new URLSearchParams(window.location.search);
+        const testKey = urlParams.get('test');
+        
+        let currentTestData = mockTestData[testKey];
+        let timerInterval;
+
+        if (!currentTestData) {
+            document.getElementById('quiz-body').innerHTML = "<p>Test data not found!</p>";
+        } else {
+            document.getElementById('test-title').innerText = currentTestData.title;
+            renderQuestions(currentTestData.questions);
+            startTimer(180 * 60); // 180 minutes in seconds
+        }
+
+        function renderQuestions(questions) {
+            const container = document.getElementById('quiz-body');
+            container.innerHTML = "";
+
+            questions.forEach((q, index) => {
+                const qDiv = document.createElement('div');
+                qDiv.className = 'question-block';
+                
+                let optionsHTML = '';
+                q.options.forEach((opt, oIdx) => {
+                    optionsHTML += `
+                        <label class="option-label">
+                            <input type="radio" name="question-${index}" value="${oIdx + 1}">
+                            <span>(${oIdx + 1}) ${opt}</span>
+                        </label>
+                    `;
+                });
+
+                qDiv.innerHTML = `
+                    <div class="question-text"><strong>Q${index + 1}.</strong> ${q.question}</div>
+                    <div class="options-container">${optionsHTML}</div>
+                `;
+                container.appendChild(qDiv);
+            });
+        }
+
+        function startTimer(duration) {
+            let timer = duration, minutes, seconds;
+            timerInterval = setInterval(function () {
+                minutes = parseInt(timer / 60, 10);
+                seconds = parseInt(timer % 60, 10);
+
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                document.getElementById('timer').innerText = "Time Left: " + minutes + ":" + seconds;
+
+                if (--timer < 0) {
+                    clearInterval(timerInterval);
+                    alert("Time's up! Submitting your test automatically.");
+                    calculateScore();
+                }
+            }, 1000);
+        }
+
+        function calculateScore() {
+            clearInterval(timerInterval);
+            const questions = currentTestData.questions;
+            let correct = 0;
+            let wrong = 0;
+            let skipped = 0;
+
+            questions.forEach((q, index) => {
+                const selectedOpt = document.querySelector(`input[name="question-${index}"]:checked`);
+                if (selectedOpt) {
+                    if (parseInt(selectedOpt.value) === q.correctAnswer) {
+                        correct++;
+                    } else {
+                        wrong++;
+                    }
+                } else {
+                    skipped++;
+                }
+            });
+
+            let finalScore = (correct * 4) - (wrong * 1);
+
+            // Display results in Modal
+            document.getElementById('total-score').innerText = finalScore;
+            document.getElementById('correct-count').innerText = correct;
+            document.getElementById('wrong-count').innerText = wrong;
+            document.getElementById('skipped-count').innerText = skipped;
+            
+            document.getElementById('result-modal').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
